@@ -1,1 +1,1 @@
-# fun-bot
+# halo discord bot
