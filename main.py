@@ -1,8 +1,100 @@
+from discord import channel, client
+from discord.ext.commands.core import guild_only
 from dotenv import load_dotenv
 from os import environ
 import discord
 from discord.ext import commands
-
-bot=commands.Bot()
+from math import floor
+from jokes import jokes
 load_dotenv()
-print(environ.get("BOT_KEY"))
+
+bot = commands.Bot(command_prefix="%")
+
+# events
+
+
+@bot.event
+async def on_ready():
+    """
+    prints READY on ready
+    """
+    print("READY")
+
+
+@bot.event
+async def on_member_join(member):
+    print("member joined")
+    await member.send('Welcome!😀😀😀😀')
+
+
+@bot.event
+async def on_message(message):
+    if(message.author == bot.user):
+        return
+    if bot.user in message.mentions:
+        await bot.get_channel(message.channel.id).send("🙄,what now?")
+    await bot.process_commands(message)
+
+
+@bot.event
+async def on_member_leave(member):
+    await bot.get_channel(int(environ.get('WELCOME'))).send(member, "left 😔")
+
+
+# Commands
+
+
+@bot.command()
+async def delete(ctx, limit=1, before=None, after=None, around=None, oldest_first=None):
+    """
+    Deletes messages in bulk
+    """
+    await ctx.channel.send(f'Deleting {limit} messages')
+    await ctx.channel.purge(limit=limit+2, before=before, after=after, around=around, oldest_first=None)
+
+
+@bot.command()
+async def ping(ctx):
+    await ctx.send(f"Ping :{floor( bot.latency*1000)} ms")
+
+
+@bot.command()
+async def joke(ctx, query="Any"):
+    """ Search for a joke
+    query: Programming/Misc/Dark/Pun/Spooky/Christmas
+    """
+    joke_json = jokes(query)
+    message = joke_json["joke"]
+    await ctx.send(message)
+
+@commands.has_permissions(kick_members=True)
+@bot.command()
+async def kick(ctx, member: discord.Member, *, reason=None):
+    await member.kick(reason=reason)
+    await ctx.send(f'User {member} has kicked.')
+
+
+@commands.has_permissions(ban_members=True)
+@bot.command()
+async def ban(ctx, user: discord.Member, *, reason="bad behaviour"):
+    await user.ban(reason=reason)
+    ban = discord.Embed(
+        title=f":boom: Banned {user.name}!", description=f"Reason: {reason}\nBy: {ctx.author.mention}")
+    await ctx.message.delete()
+    await ctx.channel.send(embed=ban)
+    await user.send(embed=ban)
+
+
+@bot.command()
+async def unban(ctx, *, member):
+    banned_users = await ctx.guild.bans()
+    member_name, member_discriminator = member.split('#')
+    for ban_entry in banned_users:
+        user = ban_entry.user
+
+        if (user.name, user.discriminator) == (member_name, member_discriminator):
+            await ctx.guild.unban(user)
+            await ctx.send(f'Unbanned {user.mention}')
+
+
+bot.run(environ.get('BOT_KEY'))
