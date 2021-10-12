@@ -93,7 +93,7 @@ async def kick(ctx, user: discord.Member, *, reason=None):
 
 @commands.has_permissions(ban_members=True)
 @bot.command()
-async def ban(ctx, user: discord.User, *, reason="bad behaviour"):
+async def ban(ctx, user: discord.Member, *, reason="bad behaviour"):
     """
     bans user
     user: Mention user
